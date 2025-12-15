@@ -44,6 +44,21 @@
         },
       }
     </script>
+    <!-- GitHub Pages SPA fallback support:
+         404.html redirects to "/BioLens/?/some/path". This snippet restores the original path on load. -->
+    <script>
+      (function () {
+        var l = window.location;
+        if (l.search && l.search.startsWith("?/")) {
+          var restored = l.search.slice(1); // remove leading "?"
+          // restored looks like "/patient&x=y" (we don't use extra params currently)
+          var parts = restored.split("&");
+          var path = parts[0] || "/";
+          var query = parts.length > 1 ? ("?" + parts.slice(1).join("&")) : "";
+          window.history.replaceState(null, "", l.pathname + path + query + l.hash);
+        }
+      })();
+    </script>
     <style>
       body {
         background-color: #050505;

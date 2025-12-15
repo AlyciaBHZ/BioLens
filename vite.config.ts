@@ -4,7 +4,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    // GitHub Pages serves the app under https://<user>.github.io/<repo>/
+    // Repo name here is "BioLens" -> base must be "/BioLens/" in production builds.
+    const base = mode === 'production' ? '/BioLens/' : '/';
     return {
+      base,
       server: {
         port: 3000,
         host: '0.0.0.0',

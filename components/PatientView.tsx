@@ -154,7 +154,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ title, source, detail, type = 'wa
 );
 
 interface PatientViewProps {
-    onNavigate: (path: string) => void;
+    onNavigate: (path: 'patient-dashboard' | 'patient-lab') => void;
 }
 
 export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {

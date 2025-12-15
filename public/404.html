@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BioLens AI</title>
+    <script>
+      // GitHub Pages SPA fallback:
+      // If user directly opens /BioLens/patient, GH Pages returns 404.html (but keeps the URL).
+      // Redirect to /BioLens/?/patient so index.html can restore the route.
+      (function () {
+        var l = window.location;
+        var repo = "BioLens";
+        var base = "/" + repo + "/";
+        if (!l.pathname.startsWith(base)) {
+          // If served elsewhere, just go to site root.
+          l.replace(base);
+          return;
+        }
+        var internal = l.pathname.slice(base.length - 1); // keep leading "/"
+        var search = l.search ? l.search.slice(1) : "";
+        var next = base + "?/" + internal.replace(/^\//, "") + (search ? "&" + search : "") + l.hash;
+        l.replace(next);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
+
+
