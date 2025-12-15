@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   Binary,
@@ -16,6 +16,8 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import { BioCoreTotem } from './BioCoreTotem';
+import { TopologyGraph } from './TopologyGraph';
 import type { Role } from '../types';
 
 type LandingPageProps = {
@@ -124,18 +126,116 @@ const Flywheel = () => (
   </div>
 );
 
+const CoreNetwork = () => {
+  const intervalMs = 1400;
+  const [tick, setTick] = useState(0);
+  const startMs = useMemo(() => Date.now(), []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setTick((t) => t + 1), intervalMs);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const feed = useMemo(
+    () => [
+      { code: 'LAB', badge: 'border-bio-blue/30 text-bio-blue bg-bio-blue/10', msg: 'Parsed panel → 14 markers normalized.' },
+      { code: 'RAG', badge: 'border-bio-green/30 text-bio-green bg-bio-green/10', msg: 'Evidence linked → PubMed/ClinVar/CPIC.' },
+      { code: 'PGX', badge: 'border-bio-yellow/30 text-bio-yellow bg-bio-yellow/10', msg: 'Phenotype derived → CYP2C19 (demo).' },
+      { code: 'GENE', badge: 'border-bio-purple/30 text-bio-purple bg-bio-purple/10', msg: 'Variant context assembled → rs731236.' },
+      { code: 'PHENO', badge: 'border-bio-red/30 text-bio-red bg-bio-red/10', msg: 'Symptom log updated (28-day window).' },
+      { code: 'SEC', badge: 'border-science-700 text-science-300 bg-science-950', msg: 'Identifiers redacted; client-only demo mode.' },
+      { code: 'CORE', badge: 'border-bio-blue/30 text-bio-blue bg-bio-blue/10', msg: 'Decision trace emitted → evidence-linked output.' },
+    ],
+    []
+  );
+
+  const formatTime = (ms: number) => new Date(ms).toISOString().slice(11, 19);
+
+  const feedLines = useMemo(() => {
+    const linesToShow = 7;
+    const safeTick = Math.max(0, tick);
+    return Array.from({ length: linesToShow }, (_, idx) => {
+      const offset = linesToShow - 1 - idx;
+      const t = Math.max(0, safeTick - offset);
+      const item = feed[t % feed.length];
+      return {
+        key: `${t}-${item.code}`,
+        time: formatTime(startMs + t * intervalMs),
+        code: item.code,
+        badge: item.badge,
+        msg: item.msg,
+        active: idx === linesToShow - 1,
+      };
+    });
+  }, [feed, startMs, tick]);
+
+  const metrics = useMemo(() => {
+    const markers = 28 + (tick % 7);
+    const citations = 1280 + (tick % 21);
+    const alerts = 1 + (tick % 3);
+    const trace = 420 + (tick % 17);
+    return [
+      { label: 'MARKERS', value: markers.toString(), tone: 'text-bio-blue' },
+      { label: 'CITATIONS', value: citations.toString(), tone: 'text-bio-green' },
+      { label: 'ALERTS', value: alerts.toString(), tone: 'text-bio-yellow' },
+      { label: 'TRACE', value: trace.toString(), tone: 'text-bio-purple' },
+    ];
+  }, [tick]);
+
+  return (
+    <div className="bg-science-900 border border-science-800 overflow-hidden">
+      <div className="px-5 py-3 border-b border-science-800 flex items-center justify-between bg-science-900/50">
+        <div className="font-mono text-xs uppercase tracking-widest text-science-300">BioLens Core Network</div>
+        <div className="flex items-center gap-2 text-[10px] text-science-500 font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-bio-green animate-pulse"></span>
+          <span>LIVE_TELEMETRY</span>
+          <span className="text-science-700">|</span>
+          <span className="tabular-nums">{formatTime(startMs + tick * intervalMs)}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3">
+        <div className="lg:col-span-2 p-5 relative">
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_25%,rgba(0,242,255,0.10),transparent_55%)]"></div>
+          <TopologyGraph className="w-full h-[360px]" />
+        </div>
+
+        <div className="border-t lg:border-t-0 lg:border-l border-science-800 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-mono text-xs uppercase tracking-widest text-science-300">System Feed</div>
+            <div className="text-[10px] text-science-600 font-mono">buffer: {feed.length}</div>
+          </div>
+
+          <div className="space-y-2 font-mono text-[11px] leading-relaxed">
+            {feedLines.map((l) => (
+              <div
+                key={l.key}
+                className={`flex items-start gap-2 ${l.active ? 'text-science-100' : 'text-science-400'}`}
+              >
+                <span className="text-science-600 tabular-nums">{l.time}</span>
+                <span className={`px-1 border ${l.badge} text-[10px] leading-4`}>{l.code}</span>
+                <span className="flex-1">{l.msg}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {metrics.map((m) => (
+              <div key={m.label} className="bg-science-950 border border-science-800 p-3">
+                <div className="text-[10px] text-science-600 font-mono uppercase tracking-widest">{m.label}</div>
+                <div className={`mt-1 font-mono font-bold tabular-nums ${m.tone}`}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNavigate, activeTab }) => {
   const [homeSearch, setHomeSearch] = useState('');
   const [uploadedName, setUploadedName] = useState<string | null>(null);
-
-  const dashboardPath = useMemo(() => {
-    try {
-      const lastRole = window.localStorage.getItem('biolens:lastRole');
-      return lastRole === 'clinician' ? '/profession' : '/patient';
-    } catch {
-      return '/patient';
-    }
-  }, []);
 
   const recommendations = useMemo(() => {
     const q = homeSearch.trim().toLowerCase();
@@ -182,8 +282,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
           <button
             type="button"
             className="flex items-center gap-3 hover:opacity-90 transition-opacity"
-            onClick={() => onNavigate(dashboardPath)}
-            title="Go to dashboard"
+            onClick={() => onNavigate('/')}
+            title="Go to home"
           >
             <div className="w-8 h-8 border border-science-700 bg-science-900 flex items-center justify-center">
               <span className="font-mono font-bold text-bio-blue">BL</span>
@@ -226,7 +326,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
         {activeTab === 'home' ? (
           <>
             {/* HERO */}
-            <div className="text-center space-y-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <div className="text-center space-y-6 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <span className="w-2 h-2 bg-bio-green animate-pulse rounded-full"></span>
                 <span className="font-mono text-bio-green text-xs tracking-widest uppercase">
@@ -234,54 +334,106 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
                 </span>
               </div>
               <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-science-500 uppercase leading-[0.92]">
-                Decoding Life,
+                Upload Genome.
                 <br />
-                One Marker at a Time.
+                Upload Labs.
+                <br />
+                Get Answers.
               </h1>
               <p className="text-base md:text-xl text-science-300 max-w-4xl mx-auto font-light leading-relaxed">
-                <span className="text-science-100 font-medium">BioLens AI</span> 把体检/基因/症状数据转成可理解的行动建议，
-                并为医生提供可追溯证据的决策辅助（教育用途，非诊断）。
+                The first multi-modal engine that cross-references your <span className="text-bio-purple font-mono font-semibold">VCF (DNA)</span> with <span className="text-bio-blue font-mono font-semibold">clinical reports</span> to find hidden risks.
+                <br />
+                <span className="text-sm text-science-400 mt-2 block">Powered by Protein Language Models + RAG • Evidence-Linked Output</span>
               </p>
             </div>
 
+            {/* WHAT WE ANALYZE */}
+            <Section
+              eyebrow="Scope"
+              title="What We Analyze"
+              subtitle="Three input streams converge into actionable insights."
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card
+                  title="Genomic Variants"
+                  icon={<Binary className="w-5 h-5 text-bio-purple" />}
+                  accent="purple"
+                >
+                  <div className="space-y-2">
+                    <div className="font-mono text-xs text-science-200">VCF Analysis</div>
+                    <div className="text-sm text-science-300">
+                      Process <span className="text-bio-purple font-mono">WGS/WES</span> data. Identify variants in <span className="text-science-100 font-semibold">CYP2C19</span>, <span className="text-science-100 font-semibold">MTHFR</span>, <span className="text-science-100 font-semibold">BRCA1/2</span>, and more.
+                    </div>
+                    <div className="text-xs text-science-500 font-mono mt-2">FORMAT: VCF • REF: ClinVar/ACMG</div>
+                  </div>
+                </Card>
+                <Card
+                  title="Clinical Reports"
+                  icon={<FileText className="w-5 h-5 text-bio-blue" />}
+                  accent="blue"
+                >
+                  <div className="space-y-2">
+                    <div className="font-mono text-xs text-science-200">PDF/Image Parser</div>
+                    <div className="text-sm text-science-300">
+                      Extract biomarkers from <span className="text-bio-blue font-mono">bloodwork</span>, <span className="text-bio-blue font-mono">urinalysis</span>, lipid panels. Generate "traffic light" interpretation.
+                    </div>
+                    <div className="text-xs text-science-500 font-mono mt-2">FORMAT: PDF/PNG/JPG • REF: LOINC</div>
+                  </div>
+                </Card>
+                <Card
+                  title="Symptom Correlation"
+                  icon={<Activity className="w-5 h-5 text-bio-red" />}
+                  accent="red"
+                >
+                  <div className="space-y-2">
+                    <div className="font-mono text-xs text-science-200">Phenotype Logging</div>
+                    <div className="text-sm text-science-300">
+                      Track <span className="text-bio-red font-mono">migraines</span>, <span className="text-bio-red font-mono">fatigue</span>, pain levels. Correlate with lab trends and <span className="text-science-100 font-semibold">genetic variants</span>.
+                    </div>
+                    <div className="text-xs text-science-500 font-mono mt-2">FORMAT: Structured Log • REF: ICD-10</div>
+                  </div>
+                </Card>
+              </div>
+            </Section>
+
             {/* Primary CTAs (more obvious, in main body) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
               <button
                 onClick={() => onSelectRole('patient')}
-                className="text-left bg-science-900 border border-bio-blue/40 hover:border-bio-blue p-6 transition-colors shadow-[0_0_0_1px_rgba(0,242,255,0.05)]"
+                className="text-left bg-science-900 border-2 border-bio-blue/40 hover:border-bio-blue p-6 transition-all shadow-[0_0_0_1px_rgba(0,242,255,0.05)] hover:shadow-[0_0_20px_-5px_rgba(0,242,255,0.3)]"
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 border border-science-800 bg-science-950 flex items-center justify-center">
                     <FileText className="w-5 h-5 text-bio-blue" />
                   </div>
-                  <div className="font-mono font-bold text-science-100">
+                  <div className="font-mono font-bold text-science-100 text-lg">
                     <span className="text-bio-blue mr-2">[</span>
                     ENTER_PATIENT_PORTAL
                     <span className="text-bio-blue ml-2">]</span>
                   </div>
                 </div>
                 <div className="text-sm text-science-300 leading-relaxed">
-                  上传体检报告/症状日志，获取红绿灯式解读与个性化下一步建议（Demo）。
+                  Upload reports, log symptoms, get personalized analysis. Start with your <span className="text-bio-blue font-mono">23andMe VCF</span> or <span className="text-bio-blue font-mono">lab PDF</span>.
                 </div>
                 <div className="mt-3 text-[10px] text-science-500 font-mono uppercase">PATH: /patient</div>
               </button>
 
               <button
                 onClick={() => onSelectRole('clinician')}
-                className="text-left bg-science-900 border border-bio-green/40 hover:border-bio-green p-6 transition-colors shadow-[0_0_0_1px_rgba(0,255,157,0.05)]"
+                className="text-left bg-science-900 border-2 border-bio-green/40 hover:border-bio-green p-6 transition-all shadow-[0_0_0_1px_rgba(0,255,157,0.05)] hover:shadow-[0_0_20px_-5px_rgba(0,255,157,0.3)]"
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 border border-science-800 bg-science-950 flex items-center justify-center">
                     <Stethoscope className="w-5 h-5 text-bio-green" />
                   </div>
-                  <div className="font-mono font-bold text-science-100">
+                  <div className="font-mono font-bold text-science-100 text-lg">
                     <span className="text-bio-green mr-2">[</span>
                     ENTER_CLINICIAN_WORKSPACE
                     <span className="text-bio-green ml-2">]</span>
                   </div>
                 </div>
                 <div className="text-sm text-science-300 leading-relaxed">
-                  一键生成 SOAP + 证据链引用（示例），节省检索与文书时间。
+                  Generate SOAP notes with <span className="text-bio-green font-mono">evidence links</span>. Auto-retrieve rare disease literature. Copy-paste to EMR.
                 </div>
                 <div className="mt-3 text-[10px] text-science-500 font-mono uppercase">PATH: /profession</div>
               </button>
@@ -320,16 +472,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
 
                     {/* CORE */}
                     <div className="flex flex-col items-center justify-center relative">
-                      <div className="hidden md:block absolute left-0 top-1/2 -translate-x-full w-12 h-px bg-science-700"></div>
-                      <div className="w-40 h-40 rounded-full border-2 border-science-700 flex items-center justify-center relative bg-science-950 shadow-[0_0_50px_-10px_rgba(0,242,255,0.1)]">
-                        <div className="absolute inset-0 rounded-full border border-bio-blue/30 animate-ping-slow"></div>
-                        <div className="text-center">
-                          <Cpu className="w-12 h-12 text-bio-blue mx-auto mb-2" strokeWidth={1.5} />
-                          <div className="text-xs font-mono font-bold text-bio-blue tracking-widest">BIO_CORE</div>
-                          <div className="text-[10px] text-science-500 font-mono mt-1">PERSONALIZED TRIAGE</div>
-                        </div>
+                      <div className="w-full max-w-[340px] mx-auto aspect-[3/2] drop-shadow-[0_0_44px_rgba(0,242,255,0.12)]">
+                        <BioCoreTotem className="w-full h-full" />
                       </div>
-                      <div className="hidden md:block absolute right-0 top-1/2 translate-x-full w-12 h-px bg-science-700"></div>
                     </div>
 
                     {/* OUTPUTS */}
@@ -539,6 +684,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
               subtitle="C 端数据入口 → 模型更精准 → 医生报告更专业 → B 端带动更多 C 端。"
             >
           <div className="space-y-6">
+            <CoreNetwork />
             <Flywheel />
             <div className="bg-science-900 border border-science-800 overflow-hidden">
               <div className="px-5 py-3 border-b border-science-800 flex items-center justify-between">

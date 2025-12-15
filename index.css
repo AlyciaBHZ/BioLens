@@ -90,6 +90,8 @@
 
   /* Slow variants to match class names used in the UI */
   .animate-ping-slow {
+    transform-box: fill-box;
+    transform-origin: center;
     animation: biolens-ping 2.25s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 
@@ -128,6 +130,65 @@
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #00f2ff;
+  }
+
+  /* Landing Page topology graph helpers */
+  .biolens-edge {
+    stroke-dasharray: 8 12;
+    stroke-dashoffset: 0;
+    animation-name: biolens-edge-flow;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .biolens-edge--primary {
+    stroke-dasharray: 10 12;
+  }
+
+  @keyframes biolens-edge-flow {
+    to { stroke-dashoffset: -1000; }
+  }
+
+  .biolens-ring {
+    stroke-dasharray: 2 10;
+    stroke-dashoffset: 0;
+    animation: biolens-ring-dash 10s linear infinite;
+  }
+
+  .biolens-ring--core {
+    stroke-dasharray: 4 12;
+    animation-duration: 7s;
+  }
+
+  @keyframes biolens-ring-dash {
+    to { stroke-dashoffset: -420; }
+  }
+
+  .biolens-scan {
+    opacity: 0.65;
+    mix-blend-mode: screen;
+  }
+
+  /* Terminal-style cursor blink */
+  @keyframes biolens-blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  .terminal-cursor::after {
+    content: '_';
+    animation: biolens-blink 1s step-end infinite;
+  }
+
+  /* Glow effects for search inputs */
+  .search-glow {
+    box-shadow: 0 0 0 1px rgba(0, 242, 255, 0.1),
+                0 0 30px -5px rgba(0, 242, 255, 0.4);
+  }
+
+  .search-glow:focus {
+    box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.6),
+                0 0 40px -5px rgba(0, 242, 255, 0.6);
   }
 }
 

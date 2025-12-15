@@ -2,7 +2,7 @@
 
 ## Project Structure
 - `index.tsx` boots React; `App.tsx` owns SPA routing and page composition.
-- `components/` UI pages/layout (e.g., `LandingPage.tsx`, `PatientView.tsx`, `ClinicianView.tsx`).
+- `components/` UI pages/layout (e.g., `LandingPage.tsx`, `PatientView.tsx`, `ClinicianView.tsx`) plus visual modules like `BioCoreTotem.tsx` and `TopologyGraph.tsx`.
 - `services/` client-side helpers and mock data (see `services/mockData.ts`).
 - `public/` static assets served as-is.
 - `vite.config.ts` Vite configuration (including GitHub Pages `base`).
@@ -28,7 +28,7 @@
 ## Configuration & Security
 - Local env lives in `.env.local` (set `GEMINI_API_KEY=...`).
 - `vite.config.ts` exposes `GEMINI_API_KEY` to the client bundle; treat it as public and use restricted keys or a server-side proxy for sensitive credentials.
-- GitHub Pages base path is `/BioLens/` in production; update `vite.config.ts` if the repo name changes.
+- Deploy base path is derived in `vite.config.ts`: if `public/CNAME` exists (custom domain), build for `/`; otherwise GitHub Actions builds for `/<repo>/`. Override with `VITE_BASE_PATH` when needed.
 
 ## Commits & Pull Requests
 - Commit messages in this repo are short and lowercase (e.g., `initial`, `pages`); keep messages concise and imperative.

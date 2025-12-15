@@ -41,13 +41,14 @@ export const mockPatient: PatientProfile = {
       gene: 'VDR',
       variant: 'rs731236 (Taq1)',
       impact: 'Receptor Density',
-      description: 'Homozygous variant associated with reduced Vitamin D receptor density and lower circulating levels.',
+      description:
+        'Homozygous variant associated with reduced Vitamin D receptor density and lower circulating levels. Variant interpretation terminology aligns with ACMG/AMP 2015. [Ref: ACMG]',
     },
     {
       gene: 'CYP2C19',
       variant: '*2/*3',
       impact: 'Poor Metabolizer',
-      description: 'Loss-of-function alleles. FDA Table 1 Actionable Pharmacogenetic interaction.',
+      description: 'Loss-of-function alleles. Actionable pharmacogenetic interaction. [Ref: CPIC]',
       drugInteraction: {
         drug: 'Clopidogrel',
         warning: 'Therapeutic failure likely. Risk of stent thrombosis.',

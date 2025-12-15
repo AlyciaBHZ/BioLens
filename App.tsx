@@ -116,7 +116,7 @@ const App = () => {
 
   // App Layout
   return (
-    <Layout role={role} onSwitchRole={switchRole}>
+    <Layout role={role} onGoHome={() => navigate('/')} onSwitchRole={switchRole}>
       {currentRoute === 'patient-dashboard' && (
         <PatientView onNavigate={(p) => navigate(p === 'patient-lab' ? '/patient/lab' : '/patient')} />
       )}

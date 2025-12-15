@@ -5,17 +5,24 @@ import { Role } from '../types';
 interface LayoutProps {
   children: React.ReactNode;
   role: Role;
+  onGoHome: () => void;
   onSwitchRole: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, role, onSwitchRole }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, role, onGoHome, onSwitchRole }) => {
   return (
     <div className="flex h-screen bg-science-950 overflow-hidden font-sans">
       {/* Slim Tech Sidebar */}
       <aside className="w-16 flex flex-col items-center py-6 border-r border-science-800 bg-science-900 z-50">
-        <div className="mb-8 p-2 bg-bio-blue/10 rounded-lg">
+        <button
+          type="button"
+          onClick={onGoHome}
+          title="Home"
+          aria-label="Go to home"
+          className="mb-8 p-2 bg-bio-blue/10 rounded-lg hover:bg-bio-blue/20 focus:outline-none focus:ring-1 focus:ring-bio-blue transition-colors"
+        >
           <Dna className="w-6 h-6 text-bio-blue" strokeWidth={2.5} />
-        </div>
+        </button>
         
         <nav className="flex-1 flex flex-col gap-6 w-full">
           {[
@@ -98,7 +105,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, role, onSwitchRole }) 
         </header>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-auto bg-science-950 p-6">
+        <main className="flex-1 overflow-auto bg-science-950 p-4">
           {children}
         </main>
       </div>

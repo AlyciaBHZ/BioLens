@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, User, ArrowRight, AlertTriangle, FileText, Sparkles, Terminal, ChevronDown, ChevronUp, Users, X, Copy } from 'lucide-react';
 import { mockPatientsList } from '../services/mockData';
 import { PatientProfile } from '../types';
+import { CitationLink } from './CitationLink';
 
 const CohortTable = ({ onSelect, onGenerateReport }: { onSelect: (p: PatientProfile) => void, onGenerateReport: (p: PatientProfile) => void }) => (
     <div className="bg-science-900 border border-science-800 overflow-hidden">
@@ -21,13 +22,28 @@ const CohortTable = ({ onSelect, onGenerateReport }: { onSelect: (p: PatientProf
                 </tr>
             </thead>
             <tbody className="divide-y divide-science-800">
-                {mockPatientsList.map((p) => (
+                {mockPatientsList.map((p) => {
+                    const rowTone =
+                      p.riskLevel === 'High'
+                        ? 'bg-bio-red/5 hover:bg-bio-red/10'
+                        : p.riskLevel === 'Medium'
+                          ? 'bg-bio-yellow/5 hover:bg-bio-yellow/10'
+                          : 'hover:bg-science-800/50';
+
+                    const idTone =
+                      p.riskLevel === 'High'
+                        ? 'border-l-2 border-bio-red/40'
+                        : p.riskLevel === 'Medium'
+                          ? 'border-l-2 border-bio-yellow/40'
+                          : 'border-l-2 border-bio-green/30';
+
+                    return (
                     <tr 
                         key={p.id} 
                         onClick={() => onSelect(p)}
-                        className="hover:bg-science-800/50 cursor-pointer transition-colors group"
+                        className={`cursor-pointer transition-colors group ${rowTone}`}
                     >
-                        <td className="px-4 py-3 font-mono text-bio-blue">{p.id}</td>
+                        <td className={`px-4 py-3 font-mono text-bio-blue ${idTone}`}>{p.id}</td>
                         <td className="px-4 py-3 font-medium text-science-100">{p.name}</td>
                         <td className="px-4 py-3">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[10px] font-mono border uppercase
@@ -47,7 +63,8 @@ const CohortTable = ({ onSelect, onGenerateReport }: { onSelect: (p: PatientProf
                              </button>
                         </td>
                     </tr>
-                ))}
+                    );
+                })}
             </tbody>
         </table>
     </div>
@@ -101,7 +118,8 @@ const ReportModal = ({ patient, onClose }: { patient: PatientProfile, onClose: (
                     <strong className="text-science-100 block mb-1">PLAN:</strong>
                     1. Initiate Vitamin D3 5000 IU daily.
                     <br/>
-                    2. Avoid Clopidogrel; consider Ticagrelor [Ref: CPIC Guidelines].
+                    2. Avoid Clopidogrel; consider Ticagrelor{' '}
+                    <CitationLink refKey="CPIC Guidelines">[Ref: CPIC Guidelines]</CitationLink>.
                     <br/>
                     3. Follow up in 3 months.
                 </div>
@@ -184,8 +202,10 @@ export const ClinicianView = () => {
                                 <p className="text-sm text-science-100 italic">
                                     "For CYP2C19 *2/*3 carriers (Poor Metabolizers), Prasugrel or Ticagrelor are recommended over Clopidogrel to reduce risk of major adverse cardiovascular events (MACE)."
                                 </p>
-                                <div className="mt-2 text-[10px] text-bio-purple font-mono cursor-pointer hover:underline">
-                                    REF: ACC/AHA GUIDELINES 2022
+                                <div className="mt-2 text-[10px] font-mono">
+                                    <CitationLink refKey="CPIC" className="!text-bio-purple hover:!text-bio-blue">
+                                      [Ref: CPIC]
+                                    </CitationLink>
                                 </div>
                             </div>
                         </div>

@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => {
     // project pages work without hardcoding the path.
     const repoName = process.env.GITHUB_REPOSITORY?.split('/')?.[1];
     const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
-    const hasCustomDomain = fs.existsSync(path.resolve(__dirname, 'public/CNAME'));
+    const projectRoot = process.cwd();
+    const hasCustomDomain = fs.existsSync(path.resolve(projectRoot, 'public', 'CNAME'));
     const explicitBase = env.VITE_BASE_PATH;
     const base =
       explicitBase
@@ -39,7 +40,7 @@ export default defineConfig(({ mode }) => {
       },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': projectRoot,
         }
       }
     };

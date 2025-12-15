@@ -2,6 +2,7 @@ import React from 'react';
 import { ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { ArrowLeft, Dna, FileText, Share2, Info, Activity } from 'lucide-react';
 import { vitaminDHistory } from '../services/mockData';
+import { CitationLink } from './CitationLink';
 
 interface LabDetailViewProps {
   onBack: () => void;
@@ -62,6 +63,9 @@ export const LabDetailView: React.FC<LabDetailViewProps> = ({ onBack }) => {
                       Variant <span className="text-science-100 font-mono font-bold">rs731236 (Taq1)</span> detected. 
                       This genotype is associated with <span className="text-science-100">30-40% lower receptor density</span>. 
                       Standard supplementation protocols often fail to achieve target serum levels in this cohort.
+                      <span className="ml-2">
+                        <CitationLink refKey="ACMG">[Ref: ACMG]</CitationLink>
+                      </span>
                    </p>
               </div>
               
