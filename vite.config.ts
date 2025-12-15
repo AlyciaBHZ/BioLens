@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -15,11 +16,14 @@ export default defineConfig(({ mode }) => {
     // project pages work without hardcoding the path.
     const repoName = process.env.GITHUB_REPOSITORY?.split('/')?.[1];
     const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+    const hasCustomDomain = fs.existsSync(path.resolve(__dirname, 'public/CNAME'));
     const explicitBase = env.VITE_BASE_PATH;
     const base =
       explicitBase
         ? normalizeBase(explicitBase)
-        : mode === 'production' && isGitHubActions && repoName
+        : mode === 'production' && hasCustomDomain
+          ? '/'
+          : mode === 'production' && isGitHubActions && repoName
           ? `/${repoName}/`
           : '/';
     return {
