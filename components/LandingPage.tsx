@@ -585,18 +585,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
                         {uploadLabel}
                       </span>
                       <span className="text-[10px] text-science-600">DEMO</span>
-                        <input
-                          type="file"
-                          className="hidden"
-                          multiple
-                          accept=".vcf,.txt,.pdf,.png,.jpg,.jpeg,image/*"
-                          onChange={(e) => {
-                          const files = e.target.files;
-                          const list = files ? Array.from(files).map((file) => file.name).filter(Boolean) : [];
+                      <input
+                        type="file"
+                        className="hidden"
+                        multiple
+                        accept=".vcf,.txt,.pdf,.png,.jpg,.jpeg,image/*"
+                        onChange={(e) => {
+                          const input = e.target as HTMLInputElement;
+                          const files = input.files;
+                          const list = files
+                            ? Array.from(files)
+                                .map((file: File) => file.name)
+                                .filter(Boolean)
+                            : [];
                           setUploadedNames(list);
-                          }}
-                        />
-                      </label>
+                        }}
+                      />
+                    </label>
                     <button
                       type="button"
                       onClick={() => onNavigate('/patient/dashboard')}
