@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   Binary,
@@ -235,38 +235,61 @@ const CoreNetwork = () => {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNavigate, activeTab }) => {
   const [homeSearch, setHomeSearch] = useState('');
-  const [uploadedName, setUploadedName] = useState<string | null>(null);
+  const [uploadedNames, setUploadedNames] = useState<string[]>([]);
+  const [heroQuery, setHeroQuery] = useState('');
+
+  const startPatientAsk = useCallback(
+    (raw: string) => {
+      const query = raw.trim();
+      if (!query) return;
+      if (typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem('biolens:pendingQuery', query);
+        } catch {
+          // ignore
+        }
+      }
+      onSelectRole('patient');
+    },
+    [onSelectRole]
+  );
+
+  const uploadLabel = useMemo(() => {
+    if (!uploadedNames.length) return 'CHOOSE_FILES (.vcf / .txt / .pdf / .png / .jpg)';
+    if (uploadedNames.length === 1) return uploadedNames[0] ?? 'CHOOSE_FILES (.vcf / .txt / .pdf / .png / .jpg)';
+    return `${uploadedNames[0]} +${uploadedNames.length - 1}`;
+  }, [uploadedNames]);
 
   const recommendations = useMemo(() => {
     const q = homeSearch.trim().toLowerCase();
     if (!q) {
       return [
-        { title: '从体检单开始', desc: '上传报告，生成红绿灯式解读 + 下一步行动建议。', to: '/patient' },
+        { title: '从体检单开始', desc: '上传报告，生成红绿灯式解读 + 下一步行动建议。', to: '/patient/dashboard' },
         { title: '基因变异与用药风险', desc: 'PGx 提示：如 CYP2C19/SLCO1B1 等常见位点。', to: '/profession' },
-        { title: '疼痛/症状追踪', desc: '把症状日志与检验趋势关联，寻找相关性。', to: '/patient' },
+        { title: '疼痛/症状追踪', desc: '把症状日志与检验趋势关联，寻找相关性。', to: '/patient/dashboard' },
       ];
     }
     if (q.includes('pain') || q.includes('疼') || q.includes('migraine') || q.includes('头痛')) {
       return [
-        { title: 'Pain-Tracker 推荐', desc: '建立 14 天症状追踪，自动关联睡眠/压力与检验趋势。', to: '/patient' },
-        { title: 'Lab-Decoder：看维生素/炎症指标', desc: '快速标记异常与复查周期建议（教育用途）。', to: '/patient' },
+        { title: 'Pain-Tracker 推荐', desc: '建立 14 天症状追踪，自动关联睡眠/压力与检验趋势。', to: '/patient/dashboard' },
+        { title: 'Lab-Decoder：看维生素/炎症指标', desc: '快速标记异常与复查周期建议（教育用途）。', to: '/patient/dashboard' },
       ];
     }
     if (q.includes('chol') || q.includes('ldl') || q.includes('血脂')) {
       return [
-        { title: '风险画像：血脂相关', desc: '结合 LDL/HDL/Triglycerides 与家族史生成风险提示。', to: '/patient' },
+        { title: '风险画像：血脂相关', desc: '结合 LDL/HDL/Triglycerides 与家族史生成风险提示。', to: '/patient/dashboard' },
         { title: 'Clinician-Copilot：SOAP 草稿', desc: '把异常点与指南摘要整理成可复制的 note（示例）。', to: '/profession' },
       ];
     }
     if (q.includes('gene') || q.includes('vcf') || q.includes('变异') || q.includes('基因')) {
       return [
         { title: 'Gene-Insight 推荐', desc: '对变异做证据链对照（ClinVar/ACMG），标记不确定性。', to: '/profession' },
-        { title: 'Lab-Decoder：表型补充', desc: '用症状/检验补足基因解释的上下文。', to: '/patient' },
+        { title: 'Lab-Decoder：表型补充', desc: '用症状/检验补足基因解释的上下文。', to: '/patient/dashboard' },
       ];
     }
     return [
-      { title: '上传体检报告', desc: '先统一结构化，再做个性化推荐。', to: '/patient' },
-      { title: '搜索相关病症', desc: '用关键词触发推荐模块（当前为 Demo）。', to: '/patient' },
+      { title: '上传体检报告', desc: '先统一结构化，再做个性化推荐。', to: '/patient/dashboard' },
+      { title: '搜索相关病症', desc: '用关键词触发推荐模块（当前为 Demo）。', to: '/patient/dashboard' },
     ];
   }, [homeSearch]);
 
@@ -326,25 +349,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
         {activeTab === 'home' ? (
           <>
             {/* HERO */}
-            <div className="text-center space-y-6 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <div className="text-center max-w-3xl mx-auto space-y-6 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <span className="w-2 h-2 bg-bio-green animate-pulse rounded-full"></span>
                 <span className="font-mono text-bio-green text-xs tracking-widest uppercase">
                   Platform Online • Wellness Tool (Non-diagnostic)
                 </span>
               </div>
-              <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-science-500 uppercase leading-[0.92]">
-                Upload Genome.
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-science-100 leading-[0.98]">
+                Upload Genome. Upload Labs.
                 <br />
-                Upload Labs.
-                <br />
-                Get Answers.
+                <span className="text-bio-blue">Get Answers.</span>
               </h1>
-              <p className="text-base md:text-xl text-science-300 max-w-4xl mx-auto font-light leading-relaxed">
-                The first multi-modal engine that cross-references your <span className="text-bio-purple font-mono font-semibold">VCF (DNA)</span> with <span className="text-bio-blue font-mono font-semibold">clinical reports</span> to find hidden risks.
-                <br />
-                <span className="text-sm text-science-400 mt-2 block">Powered by Protein Language Models + RAG • Evidence-Linked Output</span>
-              </p>
+
+              <div className="relative max-w-2xl mx-auto">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Search className="w-5 h-5 text-bio-blue animate-pulse" />
+                </div>
+                <input
+                  type="text"
+                  value={heroQuery}
+                  onChange={(e) => setHeroQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') startPatientAsk(heroQuery);
+                  }}
+                  placeholder="Try 'Do I have MTHFR mutation?' or upload a lab PDF..."
+                  className="w-full bg-science-900/80 border border-bio-blue/50 text-science-100 text-lg py-4 pl-12 pr-4 rounded-full shadow-neon focus:ring-2 focus:ring-bio-blue focus:outline-none font-mono"
+                />
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-2 text-[10px] font-mono text-science-400">
+                {[
+                  {
+                    k: 'GENOME',
+                    v: 'genome.vcf / 23andme_raw.txt',
+                    tone: 'border-bio-purple/30 text-bio-purple bg-bio-purple/10',
+                  },
+                  { k: 'LABS', v: 'bloodwork.pdf / lab_photo.jpg', tone: 'border-bio-blue/30 text-bio-blue bg-bio-blue/10' },
+                  { k: 'LOG', v: 'symptoms (typed)', tone: 'border-bio-red/30 text-bio-red bg-bio-red/10' },
+                ].map((x) => (
+                  <div key={x.k} className={`border ${x.tone} px-2 py-1`}>
+                    <span className="text-science-200">{x.k}:</span> {x.v}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                {['Analyze my BRCA1 risk', 'Can I take clopidogrel?', 'Why is my Vitamin D low?'].map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => startPatientAsk(q)}
+                    className="text-[10px] font-mono text-science-200 border border-science-800 rounded-full px-3 py-1.5 hover:border-bio-blue hover:text-bio-blue transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* WHAT WE ANALYZE */}
@@ -451,14 +512,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
                         <Binary className="text-science-500 group-hover:text-bio-blue" />
                         <div className="text-right flex-1">
                           <div className="text-xs font-mono text-science-500 uppercase">Input_Stream_01</div>
-                          <div className="text-sm font-bold text-science-100">WGS/WES Data (VCF)</div>
+                          <div className="text-sm font-bold text-science-100">Genome (VCF / 23andMe .txt)</div>
+                          <div className="mt-1 text-[10px] text-science-500 font-mono">EX: genome.vcf / 23andme_raw.txt</div>
                         </div>
                       </div>
                       <div className="bg-science-950 border border-science-700 p-4 w-full md:w-64 flex items-center gap-4 group hover:border-bio-green transition-colors">
                         <FileText className="text-science-500 group-hover:text-bio-green" />
                         <div className="text-right flex-1">
                           <div className="text-xs font-mono text-science-500 uppercase">Input_Stream_02</div>
-                          <div className="text-sm font-bold text-science-100">Clinical Reports (PDF)</div>
+                          <div className="text-sm font-bold text-science-100">Lab Reports (PDF / Image)</div>
+                          <div className="mt-1 text-[10px] text-science-500 font-mono">EX: bloodwork.pdf / lab_photo.jpg</div>
                         </div>
                       </div>
                       <div className="bg-science-950 border border-science-700 p-4 w-full md:w-64 flex items-center gap-4 group hover:border-bio-red transition-colors">
@@ -466,6 +529,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
                         <div className="text-right flex-1">
                           <div className="text-xs font-mono text-science-500 uppercase">Input_Stream_03</div>
                           <div className="text-sm font-bold text-science-100">Symptoms & Wearables</div>
+                          <div className="mt-1 text-[10px] text-science-500 font-mono">EX: migraine / fatigue / BP</div>
                         </div>
                       </div>
                     </div>
@@ -474,6 +538,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
                     <div className="flex flex-col items-center justify-center relative">
                       <div className="w-full max-w-[340px] mx-auto aspect-[3/2] drop-shadow-[0_0_44px_rgba(0,242,255,0.12)]">
                         <BioCoreTotem className="w-full h-full" />
+                      </div>
+                      <div className="mt-3 text-[10px] font-mono text-science-500 text-center">
+                        INPUTS: <span className="text-science-300">.vcf</span> / <span className="text-science-300">23andMe .txt</span> /{' '}
+                        <span className="text-science-300">.pdf</span> / <span className="text-science-300">.png/.jpg</span>
                       </div>
                     </div>
 
@@ -508,35 +576,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
               <div className="lg:col-span-5 space-y-4">
                 <div className="bg-science-900 border border-science-800 p-6">
                   <div className="text-xs font-mono text-science-500 uppercase tracking-widest mb-2">
-                    Upload your checkup report
+                    Upload your files (Genome + Labs)
                   </div>
                   <div className="flex items-center gap-3">
                     <label className="flex-1 cursor-pointer bg-science-950 border border-science-800 hover:border-science-700 p-3 text-xs font-mono text-science-300 flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         <FolderUp className="w-4 h-4 text-bio-blue" />
-                        {uploadedName ? uploadedName : 'CHOOSE_FILE (PDF / Image)'}
+                        {uploadLabel}
                       </span>
                       <span className="text-[10px] text-science-600">DEMO</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,image/*"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          setUploadedName(f ? f.name : null);
-                        }}
-                      />
-                    </label>
+                        <input
+                          type="file"
+                          className="hidden"
+                          multiple
+                          accept=".vcf,.txt,.pdf,.png,.jpg,.jpeg,image/*"
+                          onChange={(e) => {
+                          const files = e.target.files;
+                          const list = files ? Array.from(files).map((file) => file.name).filter(Boolean) : [];
+                          setUploadedNames(list);
+                          }}
+                        />
+                      </label>
                     <button
                       type="button"
-                      onClick={() => onNavigate('/patient')}
+                      onClick={() => onNavigate('/patient/dashboard')}
                       className="px-4 py-3 bg-science-100 hover:bg-white text-science-950 font-mono font-bold text-xs border border-science-100 hover:shadow-glow-blue transition-all"
                     >
                       ANALYZE
                     </button>
                   </div>
                   <div className="mt-3 text-xs text-science-400 leading-relaxed">
-                    上传后将进入患者端 Dashboard（当前为 Mock 流程）。后续可接入真实解析/LLM。
+                    支持：VCF / 23andMe (.txt) / Lab PDF / 检验单照片（示例）。点击 ANALYZE 进入患者端（Mock 流程）。
                   </div>
                 </div>
 
@@ -551,6 +621,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
                     <input
                       value={homeSearch}
                       onChange={(e) => setHomeSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        startPatientAsk(homeSearch);
+                      }}
                       placeholder="e.g. migraine / LDL / 基因变异 / 疼痛..."
                       className="w-full bg-science-950 border border-science-800 text-science-100 font-mono text-sm py-3 pl-10 pr-4 focus:ring-1 focus:ring-bio-blue focus:border-bio-blue"
                     />
@@ -818,7 +892,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onNaviga
             </Section>
 
             <div className="pt-10 border-t border-science-800 text-center text-[10px] text-science-600 font-mono tracking-widest uppercase">
-              BioLens AI • Decoding Life, One Marker at a Time • Evidence-Linked Output • Privacy by Design
+              BioLens AI | 23andMe (.txt) | VCF (.vcf) | Lab reports (.pdf/.png/.jpg) | Evidence-linked answers
             </div>
           </>
         ) : null}

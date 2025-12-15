@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceArea } from 'recharts';
-import { AlertTriangle, Database, Zap, ArrowRight, Dna, Activity, Terminal, ChevronRight } from 'lucide-react';
-import { mockPatient, vitaminDHistory, symptomHeatmap } from '../services/mockData';
+import { AlertTriangle, Database, Zap, Dna, Activity, Terminal, Paperclip, ArrowUp } from 'lucide-react';
+import { vitaminDHistory, symptomHeatmap } from '../services/mockData';
+import { routeMockAsk, type AskResult, type AskSignal } from '../services/askEngine';
 import { CitationText } from './CitationText';
 
 // --- VISUALIZATION COMPONENTS ---
@@ -77,7 +78,11 @@ const LabTrendChart = ({ title, data, unit, color }: { title: string, data: any[
             itemStyle={{ color: '#e5e5e5' }}
           />
           {/* Reference Range Band */}
-          <ReferenceArea y1={30} y2={100} fill="#10b981" fillOpacity={0.05} />
+          <ReferenceArea
+            y1={30}
+            y2={100}
+            shape={(props) => <rect {...props} fill="#10b981" fillOpacity={0.05} />}
+          />
           <Line 
             type="step" 
             dataKey="value" 
@@ -188,19 +193,10 @@ interface PatientViewProps {
 }
 
 export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
-  type LinkedSignal = 'CYP2C19' | 'VDR';
-
-  const [linkedSignal, setLinkedSignal] = useState<LinkedSignal | null>(null);
-  const [pinnedSignal, setPinnedSignal] = useState<LinkedSignal | null>(null);
+  const [linkedSignal, setLinkedSignal] = useState<AskSignal | null>(null);
+  const [pinnedSignal, setPinnedSignal] = useState<AskSignal | null>(null);
   const [queryText, setQueryText] = useState('');
-  const [queryResult, setQueryResult] = useState<{
-    title: string;
-    source: string;
-    detail: string;
-    type: 'warning' | 'info';
-    signal?: LinkedSignal;
-    onClick?: () => void;
-  } | null>(null);
+  const [queryResult, setQueryResult] = useState<AskResult | null>(null);
 
   const dashboardRef = useRef<HTMLDivElement | null>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
@@ -208,20 +204,24 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
   const geneVdrRef = useRef<HTMLDivElement | null>(null);
   const alertCypRef = useRef<HTMLDivElement | null>(null);
   const alertVdrRef = useRef<HTMLDivElement | null>(null);
+  const queryResultRef = useRef<HTMLDivElement | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const overlayRafRef = useRef<number | null>(null);
 
   const [linkOverlay, setLinkOverlay] = useState<{
-    id: 'CYP2C19' | 'VDR';
+    id: AskSignal;
     path: string;
     color: string;
     width: number;
     height: number;
   } | null>(null);
 
-  const computeOverlay = useCallback((signal: 'CYP2C19' | 'VDR') => {
+  const computeOverlay = useCallback((signal: AskSignal) => {
     const container = dashboardRef.current;
     const source = signal === 'CYP2C19' ? geneCypRef.current : geneVdrRef.current;
-    const target = signal === 'CYP2C19' ? alertCypRef.current : alertVdrRef.current;
+    const resultTarget = queryResult?.signal === signal ? queryResultRef.current : null;
+    const fallbackTarget = signal === 'CYP2C19' ? alertCypRef.current : alertVdrRef.current;
+    const target = resultTarget ?? fallbackTarget;
     if (!container || !source || !target) return null;
 
     const containerRect = container.getBoundingClientRect();
@@ -247,7 +247,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
       width: Math.max(0, containerRect.width),
       height: Math.max(0, containerRect.height),
     };
-  }, []);
+  }, [queryResult?.signal]);
 
   const scheduleOverlayUpdate = useCallback(() => {
     if (overlayRafRef.current != null) return;
@@ -264,6 +264,10 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
   useEffect(() => {
     scheduleOverlayUpdate();
   }, [linkedSignal, scheduleOverlayUpdate]);
+
+  useEffect(() => {
+    scheduleOverlayUpdate();
+  }, [queryResult?.signal, scheduleOverlayUpdate]);
 
   useEffect(() => {
     const onResize = () => scheduleOverlayUpdate();
@@ -285,6 +289,52 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
     setLinkedSignal(null);
   }, []);
 
+  const triggerUpload = useCallback(() => {
+    uploadInputRef.current?.click();
+  }, []);
+
+  const handleUpload = useCallback((file: File) => {
+    const name = file.name || 'upload';
+    const sizeKb = Math.max(1, Math.round(file.size / 1024));
+    const ext = name.split('.').pop()?.toLowerCase() ?? '';
+    const kind =
+      ext === 'vcf'
+        ? 'GENOME_VCF'
+        : ext === 'txt'
+          ? '23ANDME_RAW'
+          : ext === 'pdf'
+            ? 'LAB_REPORT_PDF'
+            : file.type.startsWith('image/')
+              ? 'LAB_REPORT_IMAGE'
+              : 'FILE';
+
+    setQueryResult({
+      title: 'File queued for analysis',
+      source: `UPLOAD: ${name}`,
+      detail: `Received ${name} (${sizeKb} KB). Detected: ${kind}. Next: extract variants/markers and generate evidence-linked insights.`,
+      type: 'info',
+    });
+    setQueryText('');
+    setPinnedSignal(null);
+    setLinkedSignal(null);
+  }, []);
+
+  const logSymptom = useCallback((symptom: string) => {
+    const label = symptom.trim();
+    if (!label) return;
+    setQueryResult({
+      title: 'Symptom logged',
+      source: 'PHENOTYPE_LOG',
+      detail: `Recorded symptom: ${label}. (Demo only — not persisted)`,
+      type: 'info',
+    });
+    setQueryText('');
+    setPinnedSignal(null);
+    setLinkedSignal(null);
+  }, []);
+
+  const routeQuery = useCallback((raw: string) => routeMockAsk(raw), []);
+  /*
   const routeQuery = useCallback(
     (raw: string) => {
       const question = raw.trim();
@@ -387,6 +437,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
     },
     [onNavigate]
   );
+  */
 
   const submitQuery = useCallback(
     (raw: string) => {
@@ -405,6 +456,15 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
   );
 
   useEffect(() => {
+    try {
+      const pending = window.sessionStorage.getItem('biolens:pendingQuery');
+      if (pending) {
+        window.sessionStorage.removeItem('biolens:pendingQuery');
+        submitQuery(pending);
+      }
+    } catch {
+      // ignore
+    }
     const onAsk = (event: Event) => {
       const detail = (event as CustomEvent<string>).detail;
       if (typeof detail !== 'string') return;
@@ -414,11 +474,15 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
     return () => window.removeEventListener('biolens:ask', onAsk as EventListener);
   }, [submitQuery]);
 
+  useEffect(() => {
+    if (!queryResult) return;
+    queryResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [queryResult]);
+
+  const primaryQueryAction = queryResult?.actions?.find((a) => a.type === 'navigate') ?? null;
+
   return (
-    <div
-      ref={dashboardRef}
-      className="relative grid grid-cols-1 lg:grid-cols-12 gap-4 max-w-[1600px] mx-auto animate-in fade-in duration-500"
-    >
+    <div ref={dashboardRef} className="relative max-w-[1600px] mx-auto animate-in fade-in duration-500">
       {linkOverlay ? (
         <svg
           className="absolute inset-0 pointer-events-none z-0"
@@ -463,9 +527,108 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
           </circle>
         </svg>
       ) : null}
-      
-      {/* COLUMN 1: BIO-CONTEXT (Gene + Lab) - Width 4/12 */}
-      <div className="lg:col-span-4 space-y-4 relative z-10">
+
+      <div className="relative z-10">
+        {/* Top Bio-Omnibar (Search-first) */}
+        <div className="max-w-3xl mx-auto text-center py-10">
+          <h2 className="text-2xl font-mono font-bold text-science-100 mb-6">
+            Good Morning, Jane. <span className="text-science-500">System Ready.</span>
+          </h2>
+
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-bio-blue to-bio-purple rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Terminal className="h-5 w-5 text-bio-blue" />
+              </div>
+              <input
+                type="text"
+                value={queryText}
+                onChange={(e) => setQueryText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitQuery(queryText);
+                }}
+                placeholder="Ask about a gene, upload a lab report, or log a symptom..."
+                className="w-full bg-science-950 border border-science-700 text-science-100 font-mono text-lg py-4 pl-12 pr-24 rounded-lg focus:ring-2 focus:ring-bio-blue focus:border-transparent shadow-neon"
+              />
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={triggerUpload}
+                  className="p-2 hover:bg-science-800 rounded-md text-science-400 hover:text-science-100 transition-colors"
+                  aria-label="Upload file"
+                  title="Upload file"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => submitQuery(queryText)}
+                  className="p-2 bg-bio-blue text-science-950 rounded-md font-bold hover:brightness-110 transition-all"
+                  aria-label="Send query"
+                  title="Send query"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <input
+            ref={uploadInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.png,.jpg,.jpeg,.vcf,.txt,image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              handleUpload(f);
+              e.target.value = '';
+            }}
+          />
+
+          <div className="flex justify-center gap-3 mt-4 flex-wrap">
+            <button
+              type="button"
+              onClick={() => submitQuery('Analyze my CYP2C19 for drug risks')}
+              className="px-3 py-1 bg-science-900 border border-science-800 rounded-full text-xs font-mono text-science-400 hover:border-bio-blue hover:text-bio-blue transition-colors inline-flex items-center gap-2"
+            >
+              <Dna className="w-3 h-3" /> Analyze CYP2C19 Risk
+            </button>
+            <button
+              type="button"
+              onClick={triggerUpload}
+              className="px-3 py-1 bg-science-900 border border-science-800 rounded-full text-xs font-mono text-science-400 hover:border-bio-blue hover:text-bio-blue transition-colors inline-flex items-center gap-2"
+            >
+              <Paperclip className="w-3 h-3" /> Upload Bloodwork
+            </button>
+            <button
+              type="button"
+              onClick={() => logSymptom('Migraine')}
+              className="px-3 py-1 bg-science-900 border border-science-800 rounded-full text-xs font-mono text-science-400 hover:border-bio-blue hover:text-bio-blue transition-colors inline-flex items-center gap-2"
+            >
+              <Activity className="w-3 h-3" /> Log Migraine
+            </button>
+          </div>
+
+          {pinnedSignal ? (
+            <div className="mt-4 flex items-center justify-center gap-3 text-[10px] font-mono">
+              <span className="text-science-500">PINNED_SIGNAL:</span>
+              <span className="text-science-100">{pinnedSignal}</span>
+              <button
+                type="button"
+                onClick={clearPinned}
+                className="text-science-300 border border-science-700 rounded-sm px-2 py-0.5 hover:border-bio-blue hover:text-bio-blue transition-colors"
+              >
+                CLEAR
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 opacity-80 hover:opacity-100 transition-opacity duration-500">
+          {/* COLUMN 1: BIO-CONTEXT (Gene + Lab) - Width 4/12 */}
+          <div className="lg:col-span-4 space-y-4 relative z-10">
          <div className="flex items-center gap-2 mb-2 text-science-300">
             <Database className="w-4 h-4" />
             <span className="text-xs font-mono font-bold uppercase tracking-widest">Integrated Biomarkers</span>
@@ -507,16 +670,29 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
                  onHoverEnd={() => setLinkedSignal(pinnedSignal)}
               />
          </div>
-       </div>
+          </div>
 
       {/* COLUMN 2: INTELLIGENCE FEED (Center) - Width 5/12 */}
-      <div className="lg:col-span-5 flex flex-col h-[calc(100vh-8rem)] relative z-10">
-          <div className="flex items-center gap-2 mb-3 text-science-300">
-            <Zap className="w-4 h-4 text-bio-yellow" />
-            <span className="text-xs font-mono font-bold uppercase tracking-widest">AI Analysis & Insights</span>
-         </div>
-         
-         <div ref={feedRef} className="flex-1 bg-science-900 border border-science-800 rounded-sm overflow-y-auto custom-scrollbar p-1">
+       <div className="lg:col-span-5 flex flex-col h-[calc(100vh-8rem)] relative z-10">
+           <div className="flex items-center gap-2 mb-3 text-science-300">
+             <Zap className="w-4 h-4 text-bio-yellow" />
+             <span className="text-xs font-mono font-bold uppercase tracking-widest">AI Analysis & Insights</span>
+           </div>
+
+           {queryResult ? (
+              <div ref={queryResultRef} className="mb-3">
+                <AlertCard
+                  title={queryResult.title}
+                  source={queryResult.source}
+                  detail={queryResult.detail}
+                  type={queryResult.type}
+                  onClick={primaryQueryAction ? () => onNavigate(primaryQueryAction.to) : undefined}
+                  isLinked={queryResult.signal ? linkedSignal === queryResult.signal : false}
+                />
+              </div>
+            ) : null}
+          
+          <div ref={feedRef} className="flex-1 bg-science-900 border border-science-800 rounded-sm overflow-y-auto custom-scrollbar p-1">
             <div className="sticky top-0 bg-science-900/95 backdrop-blur z-10 p-2 border-b border-science-800 mb-2">
                <div className="text-[10px] font-mono text-science-500 flex justify-between">
                   <span>LAST_UPDATE: 10:42:05 UTC</span>
@@ -553,19 +729,8 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
             </div>
 
          </div>
-         
-         {/* Command Input */}
-         <div className="mt-3 relative">
-             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Terminal className="h-4 w-4 text-bio-blue" />
-             </div>
-             <input 
-                type="text" 
-                placeholder="EXECUTE ANALYSIS..."
-                className="w-full bg-science-900 border border-science-800 rounded-sm text-science-100 font-mono text-sm py-2 pl-10 pr-4 focus:ring-1 focus:ring-bio-blue focus:border-bio-blue shadow-glow-blue transition-shadow"
-             />
-         </div>
-      </div>
+
+       </div>
 
       {/* COLUMN 3: PHENOTYPE TRACKING - Width 3/12 */}
       <div className="lg:col-span-3 space-y-4 relative z-10">
@@ -600,8 +765,10 @@ export const PatientView: React.FC<PatientViewProps> = ({ onNavigate }) => {
                  </button>
              </div>
          </div>
-      </div>
+       </div>
 
+        </div>
+      </div>
     </div>
   );
 };

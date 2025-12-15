@@ -190,6 +190,10 @@
     box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.6),
                 0 0 40px -5px rgba(0, 242, 255, 0.6);
   }
-}
 
+  .shadow-neon {
+    box-shadow: 0 0 20px -5px rgba(0, 242, 255, 0.15),
+      0 0 10px -5px rgba(185, 103, 255, 0.15);
+  }
+}
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dna, LayoutGrid, FileText, Activity, Search, Database, Settings, LogOut, Command, Bell } from 'lucide-react';
 import { Role } from '../types';
 
@@ -10,6 +10,8 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, role, onGoHome, onSwitchRole }) => {
+  const [globalQuery, setGlobalQuery] = useState('');
+
   return (
     <div className="flex h-screen bg-science-950 overflow-hidden font-sans">
       {/* Slim Tech Sidebar */}
@@ -79,7 +81,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, role, onGoHome, onSwit
                </div>
                <input 
                   type="text" 
-                  placeholder="QUERY_BIOMARKER..." 
+                  placeholder="ASK_BIOLENS..." 
+                  value={globalQuery}
+                  onChange={(e) => setGlobalQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return;
+                    const q = globalQuery.trim();
+                    if (!q) return;
+                    window.dispatchEvent(new CustomEvent('biolens:ask', { detail: q }));
+                    setGlobalQuery('');
+                  }}
                   className="bg-science-950 border border-science-800 text-science-100 text-xs rounded-none focus:ring-1 focus:ring-bio-blue focus:border-bio-blue block w-64 pl-10 p-1.5 font-mono placeholder:text-science-700 transition-all"
                />
                <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">

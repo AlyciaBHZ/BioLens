@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Layout } from './components/Layout';
+import { PatientAskView } from './components/PatientAskView';
 import { PatientView } from './components/PatientView';
 import { ClinicianView } from './components/ClinicianView';
 import { LabDetailView } from './components/LabDetailView';
 import { LandingPage } from './components/LandingPage';
 import { Role } from './types';
 
-type Route = 'landing' | 'patient-dashboard' | 'patient-lab' | 'clinician-dashboard';
+type Route = 'landing' | 'patient-ask' | 'patient-dashboard' | 'patient-lab' | 'clinician-dashboard';
 
 const App = () => {
   const baseUrl = (import.meta as any)?.env?.BASE_URL ?? '/';
@@ -44,6 +45,11 @@ const App = () => {
     }
     if (path === '/patient' || path === '/patient/') {
       setRole('patient');
+      setCurrentRoute('patient-ask');
+      return;
+    }
+    if (path === '/patient/dashboard' || path === '/patient/dashboard/') {
+      setRole('patient');
       setCurrentRoute('patient-dashboard');
       return;
     }
@@ -77,6 +83,23 @@ const App = () => {
     return () => window.removeEventListener('popstate', onPopState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onAsk = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      if (typeof detail !== 'string') return;
+      if (currentRoute === 'patient-ask' || currentRoute === 'patient-dashboard') return;
+      try {
+        window.sessionStorage.setItem('biolens:pendingQuery', detail);
+      } catch {
+        // ignore
+      }
+      navigate('/patient');
+    };
+    window.addEventListener('biolens:ask', onAsk as EventListener);
+    return () => window.removeEventListener('biolens:ask', onAsk as EventListener);
+  }, [currentRoute]);
 
   const handleRoleSelect = (selectedRole: Role) => {
     if (!selectedRole) return;
@@ -117,11 +140,52 @@ const App = () => {
   // App Layout
   return (
     <Layout role={role} onGoHome={() => navigate('/')} onSwitchRole={switchRole}>
+      {currentRoute === 'patient-ask' && (
+        <PatientAskView
+          onNavigate={(p) => {
+            if (p === 'patient-lab') {
+              try {
+                window.sessionStorage.setItem('biolens:labReturnTo', 'ask');
+              } catch {
+                // ignore
+              }
+              navigate('/patient/lab');
+              return;
+            }
+            navigate('/patient/dashboard');
+          }}
+        />
+      )}
       {currentRoute === 'patient-dashboard' && (
-        <PatientView onNavigate={(p) => navigate(p === 'patient-lab' ? '/patient/lab' : '/patient')} />
+        <PatientView
+          onNavigate={(p) => {
+            if (p === 'patient-lab') {
+              try {
+                window.sessionStorage.setItem('biolens:labReturnTo', 'dashboard');
+              } catch {
+                // ignore
+              }
+              navigate('/patient/lab');
+              return;
+            }
+            navigate('/patient/dashboard');
+          }}
+        />
       )}
       {currentRoute === 'patient-lab' && (
-        <LabDetailView onBack={() => navigate('/patient')} />
+        <LabDetailView
+          onBack={() => {
+            let dest = '/patient';
+            try {
+              const returnTo = window.sessionStorage.getItem('biolens:labReturnTo');
+              dest = returnTo === 'dashboard' ? '/patient/dashboard' : '/patient';
+              window.sessionStorage.removeItem('biolens:labReturnTo');
+            } catch {
+              // ignore
+            }
+            navigate(dest);
+          }}
+        />
       )}
       {currentRoute === 'clinician-dashboard' && (
         <ClinicianView />
