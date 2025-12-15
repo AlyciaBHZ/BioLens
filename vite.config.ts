@@ -4,9 +4,24 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    // GitHub Pages serves the app under https://<user>.github.io/<repo>/
-    // Repo name here is "BioLens" -> base must be "/BioLens/" in production builds.
-    const base = mode === 'production' ? '/BioLens/' : '/';
+
+    const normalizeBase = (value: string) => {
+      if (!value) return '/';
+      const withLeadingSlash = value.startsWith('/') ? value : `/${value}`;
+      return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+    };
+
+    // Default to root in local builds. In GitHub Actions, derive the repo name so
+    // project pages work without hardcoding the path.
+    const repoName = process.env.GITHUB_REPOSITORY?.split('/')?.[1];
+    const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+    const explicitBase = env.VITE_BASE_PATH;
+    const base =
+      explicitBase
+        ? normalizeBase(explicitBase)
+        : mode === 'production' && isGitHubActions && repoName
+          ? `/${repoName}/`
+          : '/';
     return {
       base,
       server: {

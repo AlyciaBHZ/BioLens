@@ -1,107 +1,134 @@
-/* Small utility layer for Tailwind CDN projects:
-   - Provide missing animation utilities used across the app
-   - Provide custom scrollbar styles (used in PatientView)
-*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* -----------------------------
-   Animation helpers (tailwindcss-animate like)
--------------------------------- */
-.animate-in {
-  --animate-duration: 500ms;
-  --animate-delay: 0ms;
-  animation-duration: var(--animate-duration);
-  animation-delay: var(--animate-delay);
-  animation-fill-mode: both;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+@layer base {
+  body {
+    background-color: #050505;
+    color: #e5e5e5;
+  }
+
+  /* Precision Scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #262626;
+    border-radius: 0px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00f2ff;
+  }
+
+  .font-mono-numbers {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
-.fade-in {
-  animation-name: biolens-fade-in;
-}
+@layer utilities {
+  /* Animation helpers (tailwindcss-animate like) */
+  .animate-in {
+    --animate-duration: 500ms;
+    --animate-delay: 0ms;
+    animation-duration: var(--animate-duration);
+    animation-delay: var(--animate-delay);
+    animation-fill-mode: both;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
 
-.slide-in-from-bottom-4 {
-  animation-name: biolens-slide-in-from-bottom-4;
-}
+  .fade-in {
+    animation-name: biolens-fade-in;
+  }
 
-.slide-in-from-right-4 {
-  animation-name: biolens-slide-in-from-right-4;
-}
+  .slide-in-from-bottom-4 {
+    animation-name: biolens-slide-in-from-bottom-4;
+  }
 
-.zoom-in-95 {
-  animation-name: biolens-zoom-in-95;
-}
+  .slide-in-from-right-4 {
+    animation-name: biolens-slide-in-from-right-4;
+  }
 
-/* Map a few Tailwind duration/delay classes into CSS variables without
-   overriding Tailwind's own transition-* rules. */
-.duration-200 { --animate-duration: 200ms; }
-.duration-500 { --animate-duration: 500ms; }
-.duration-1000 { --animate-duration: 1000ms; }
+  .zoom-in-95 {
+    animation-name: biolens-zoom-in-95;
+  }
 
-.delay-200 { --animate-delay: 200ms; }
-.delay-500 { --animate-delay: 500ms; }
+  /* Map a few Tailwind duration/delay classes into CSS variables without
+     overriding Tailwind's own transition-* rules. */
+  .duration-200 { --animate-duration: 200ms; }
+  .duration-500 { --animate-duration: 500ms; }
+  .duration-1000 { --animate-duration: 1000ms; }
 
-@keyframes biolens-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+  .delay-200 { --animate-delay: 200ms; }
+  .delay-500 { --animate-delay: 500ms; }
 
-@keyframes biolens-slide-in-from-bottom-4 {
-  from { opacity: 0; transform: translateY(1rem); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  @keyframes biolens-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
-@keyframes biolens-slide-in-from-right-4 {
-  from { opacity: 0; transform: translateX(1rem); }
-  to { opacity: 1; transform: translateX(0); }
-}
+  @keyframes biolens-slide-in-from-bottom-4 {
+    from { opacity: 0; transform: translateY(1rem); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-@keyframes biolens-zoom-in-95 {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
+  @keyframes biolens-slide-in-from-right-4 {
+    from { opacity: 0; transform: translateX(1rem); }
+    to { opacity: 1; transform: translateX(0); }
+  }
 
-/* Slow variants to match class names used in the UI */
-.animate-ping-slow {
-  animation: biolens-ping 2.25s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
+  @keyframes biolens-zoom-in-95 {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
 
-.animate-pulse-slow {
-  animation: biolens-pulse 2.4s ease-in-out infinite;
-}
+  /* Slow variants to match class names used in the UI */
+  .animate-ping-slow {
+    animation: biolens-ping 2.25s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
 
-@keyframes biolens-ping {
-  75%, 100% { transform: scale(2); opacity: 0; }
-}
+  .animate-pulse-slow {
+    animation: biolens-pulse 2.4s ease-in-out infinite;
+  }
 
-@keyframes biolens-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+  @keyframes biolens-ping {
+    75%, 100% { transform: scale(2); opacity: 0; }
+  }
 
-/* -----------------------------
-   Scrollbar helpers
--------------------------------- */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #262626 #0a0a0a;
-}
+  @keyframes biolens-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
+  /* Scrollbar helpers */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #262626 #0a0a0a;
+  }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #262626;
-  border-radius: 0;
-}
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #00f2ff;
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #262626;
+    border-radius: 0;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #00f2ff;
+  }
 }
 
 
